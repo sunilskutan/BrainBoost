@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Question Quiz - Firestore</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="module">
+        // ✅ Import Firebase Modules
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // ✅ Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyA161hm4VSUvhaE-TaTN__wWXQrGDgr7Gw",
+            authDomain: "quiz-c67e4.firebaseapp.com",
+            projectId: "quiz-c67e4",
+            storageBucket: "quiz-c67e4.appspot.com",
+            messagingSenderId: "384299123981",
+            appId: "1:384299123981:web:7ad3c53f12c6d7edb31c44",
+            measurementId: "G-MRBYFQJ7LT"
+        };
+
+        // ✅ Initialize Firebase
+        try {
+            const app = initializeApp(firebaseConfig);
+            const db = getFirestore(app);
+            console.log("🔥 Firebase Connected Successfully");
+
+            let allQuestions = []; // Store all questions
+            let displayedQuestions = []; // Track shown question IDs
+            const MAX_QUESTIONS = 10; // Limit to 10 questions
+
+            // ✅ Fetch Questions from Firestore
+            window.fetchQuestionsFromFirestore = async function() {
+                try {
+                    console.log("📥 Attempting to fetch questions from Firestore...");
+                    const querySnapshot = await getDocs(collection(db, "questions"));
+                    console.log("📦 Query Snapshot:", querySnapshot);
+
+                    if (querySnapshot.empty) {
+                        console.warn("⚠️ No questions found in Firestore!");
+                        document.getElementById("questionText").innerText = "No questions available in the database.";
+                        alert("⚠️ No questions found in Firestore! Please add some questions.");
+                        return;
+                    }
+
+                    allQuestions = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    console.log(`📌 Successfully loaded ${allQuestions.length} questions:`, allQuestions);
+
+                    // Validate question structure
+                    const validQuestions = allQuestions.filter(q => 
+                        q.questiontext && 
+                        q.option1 && q.option2 && q.option3 && q.option4 && 
+                        q.correctanswer && 
+                        ["1", "2", "3", "4"].includes(q.correctanswer.toString())
+                    );
+                    if (validQuestions.length === 0) {
+                        console.warn("⚠️ No valid questions found! Ensure questions have all required fields.");
+                        document.getElementById("questionText").innerText = "No valid questions available.";
+                        alert("⚠️ No valid questions found! Ensure questions have all required fields.");
+                        return;
+                    }
+
+                    allQuestions = validQuestions;
+                    console.log(`📌 Filtered to ${allQuestions.length} valid questions.`);
+                    window.fetchRandomQuestion(); // Load the first question
+                } catch (error) {
+                    console.error("❌ Error fetching questions:", error);
+                    document.getElementById("questionText").innerText = "Failed to load questions.";
+                    alert(`❌ Failed to load questions: ${error.message}`);
+                }
+            };
+
+            // ✅ Fetch a Unique Random Question
+            window.fetchRandomQuestion = function() {
+                try {
+                    if (displayedQuestions.length >= MAX_QUESTIONS) {
+                        console.log("🏁 Reached maximum questions (10). Redirecting...");
+                        alert("✅ You have completed 10 questions! Sign up now to continue.");
+                        window.location.href = "index.html"; // Redirect to signup page
+                        return;
+                    }
+
+                    let remainingQuestions = allQuestions.filter(q => !displayedQuestions.includes(q.id));
+                    if (remainingQuestions.length === 0) {
+                        console.log("🏁 No more unique questions available. Redirecting...");
+                        alert("✅ All questions have been displayed! Sign up now.");
+                        window.location.href = "index.html";
+                        return;
+                    }
+
+                    let question = remainingQuestions[Math.floor(Math.random() * remainingQuestions.length)];
+                    displayedQuestions.push(question.id);
+                    console.log(`📝 Displaying question ID: ${question.id}, Total displayed: ${displayedQuestions.length}`);
+
+                    // Update DOM with question and options
+                    document.getElementById("questionText").innerText = question.questiontext || "Question text missing";
+                    document.getElementById("option1Label").innerText = question.option1 || "Option 1 missing";
+                    document.getElementById("option2Label").innerText = question.option2 || "Option 2 missing";
+                    document.getElementById("option3Label").innerText = question.option3 || "Option 3 missing";
+                    document.getElementById("option4Label").innerText = question.option4 || "Option 4 missing";
+
+                    document.getElementById("option1").value = "1";
+                    document.getElementById("option2").value = "2";
+                    document.getElementById("option3").value = "3";
+                    document.getElementById("option4").value = "4";
+
+                    document.getElementById("options").setAttribute("data-correct", question.correctanswer);
+                    document.getElementById("options").setAttribute("data-explanation", question.explanation || "No explanation provided.");
+
+                    window.clearCheckboxes(); // Clear checkboxes
+                    document.getElementById("messageBox").innerHTML = "";
+                } catch (error) {
+                    console.error("❌ Error in fetchRandomQuestion:", error);
+                    document.getElementById("questionText").innerText = "Error loading question.";
+                }
+            };
+
+            // ✅ Check Answer
+            window.checkAnswer = function(selectedElement) {
+                try {
+                    let correctAnswer = document.getElementById("options").getAttribute("data-correct");
+                    let explanation = document.getElementById("options").getAttribute("data-explanation");
+                    let messageBox = document.getElementById("messageBox");
+
+                    if (selectedElement.value === correctAnswer) {
+                        messageBox.innerHTML = `<span class="text-green-500 font-bold">✅ Correct!</span> ${explanation}`;
+                    } else {
+                        messageBox.innerHTML = `<span class="text-red-500 font-bold">❌ Incorrect!</span> The correct answer is option ${correctAnswer}. ${explanation}`;
+                    }
+
+                    // Uncheck other checkboxes after selection
+                    document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+                        if (cb !== selectedElement) cb.checked = false;
+                    });
+                } catch (error) {
+                    console.error("❌ Error in checkAnswer:", error);
+                    document.getElementById("messageBox").innerHTML = "Error checking answer.";
+                }
+            };
+
+            // ✅ Clear Checkboxes
+            window.clearCheckboxes = function() {
+                try {
+                    document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+                } catch (error) {
+                    console.error("❌ Error in clearCheckboxes:", error);
+                }
+            };
+
+            // ✅ Load Questions on Page Load
+            window.onload = function() {
+                console.log("🌐 Page loaded, fetching questions...");
+                window.fetchQuestionsFromFirestore();
+            };
+        } catch (error) {
+            console.error("❌ Firebase initialization failed:", error);
+            document.getElementById("questionText").innerText = "Failed to initialize Firebase.";
+            alert("❌ Firebase initialization failed. Check console for details.");
+        }
+    </script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center h-screen">
+    <div class="bg-white p-8 rounded-lg shadow-lg w-96">
+        <h2 class="text-xl font-bold mb-4 text-blue-600 text-center">Question Quiz</h2>
+        <p id="questionText" class="mb-4 text-gray-700 text-lg font-semibold">Loading question...</p>
+
+        <div id="options" class="space-y-3">
+            <div class="flex items-center">
+                <input type="checkbox" id="option1" class="mr-2" onchange="checkAnswer(this)">
+                <label for="option1" id="option1Label" class="text-gray-700">Option 1</label>
+            </div>
+            <div class="flex items-center">
+                <input type="checkbox" id="option2" class="mr-2" onchange="checkAnswer(this)">
+                <label for="option2" id="option2Label" class="text-gray-700">Option 2</label>
+            </div>
+            <div class="flex items-center">
+                <input type="checkbox" id="option3" class="mr-2" onchange="checkAnswer(this)">
+                <label for="option3" id="option3Label" class="text-gray-700">Option 3</label>
+            </div>
+            <div class="flex items-center">
+                <input type="checkbox" id="option4" class="mr-2" onchange="checkAnswer(this)">
+                <label for="option4" id="option4Label" class="text-gray-700">Option 4</label>
+            </div>
+        </div>
+
+        <p id="messageBox" class="mt-4 text-lg text-center"></p>
+
+        <button onclick="fetchRandomQuestion()" class="mt-4 bg-blue-500 text-white py-2 px-4 rounded-lg w-full hover:bg-blue-700">Next Question</button>
+    </div>
+</body>
+</html>
