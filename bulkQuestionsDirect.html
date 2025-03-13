@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bulk Question Upload - Firestore</title>
+
+    <script type="module">
+        // ✅ Import Firebase Modules
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // ✅ Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyA161hm4VSUvhaE-TaTN__wWXQrGDgr7Gw",
+            authDomain: "quiz-c67e4.firebaseapp.com",
+            projectId: "quiz-c67e4",
+            storageBucket: "quiz-c67e4.appspot.com",
+            messagingSenderId: "384299123981",
+            appId: "1:384299123981:web:7ad3c53f12c6d7edb31c44",
+            measurementId: "G-MRBYFQJ7LT"
+        };
+
+        // ✅ Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        console.log("🔥 Firebase Connected");
+
+        // ✅ Validate and Store Questions
+        window.validateAndStore = async function() {
+            let inputText = document.getElementById("questionInput").value.trim();
+            if (inputText === "") {
+                alert("⚠️ Please enter questions in the specified format.");
+                return;
+            }
+
+            let questionsArray = inputText.split("},{").map(q => q.replace(/^\{|\}$/g, "").trim());
+            let formattedQuestions = [];
+
+            for (let question of questionsArray) {
+                let parts = question.split(",");
+                if (parts.length < 13) {
+                    alert("⚠️ Invalid format detected. Each question must have at least 13 fields.");
+                    return;
+                }
+
+                let [questiontext, option1, option2, option3, option4, correctanswer, explanation, 
+                     category, difficulty, marks, imageurl, type, tags] = parts.map(p => p.trim());
+
+                if (!/^[1-4]$/.test(correctanswer)) {
+                    alert("⚠️ Invalid correct option number: " + correctanswer);
+                    return;
+                }
+
+                formattedQuestions.push({
+                    questiontext,
+                    option1: option1.replace(/^\d+\./, "").trim(),
+                    option2: option2.replace(/^\d+\./, "").trim(),
+                    option3: option3.replace(/^\d+\./, "").trim(),
+                    option4: option4.replace(/^\d+\./, "").trim(),
+                    correctanswer: parseInt(correctanswer),
+                    explanation,
+                    category,
+                    difficulty: parseInt(difficulty),
+                    marks: parseFloat(marks) || 0,
+                    imageurl,
+                    type,
+                    tags
+                });
+            }
+
+            await checkAndStoreUniqueQuestions(formattedQuestions);
+        };
+
+        // ✅ Check if question exists before storing
+        async function checkAndStoreUniqueQuestions(questions) {
+            const snapshot = await getDocs(collection(db, "questions"));
+            let existingQuestions = snapshot.docs.map(doc => doc.data().questiontext.toLowerCase());
+
+            let newQuestions = questions.filter(q => !existingQuestions.includes(q.questiontext.toLowerCase()));
+
+            if (newQuestions.length === 0) {
+                alert("⚠️ All questions already exist in the database. No new questions were added.");
+                return;
+            }
+
+            await addQuestionsToFirestore(newQuestions);
+        }
+
+        // ✅ Store unique questions in Firestore
+        async function addQuestionsToFirestore(questions) {
+            try {
+                for (let question of questions) {
+                    let docRef = doc(collection(db, "questions"));
+                    await setDoc(docRef, question);
+                }
+
+                alert(`✅ ${questions.length} new question(s) added successfully!`);
+                document.getElementById("questionInput").value = ""; // Clear input field
+            } catch (error) {
+                console.error("❌ Error adding questions:", error);
+                alert("❌ Failed to add questions. Check console for details.");
+            }
+        }
+
+        // ✅ Display stored questions
+        window.displayStoredQuestions = async function() {
+            try {
+                const snapshot = await getDocs(collection(db, "questions"));
+                let displayArea = document.getElementById("storedQuestions");
+                displayArea.innerHTML = "<h3>📚 Stored Questions</h3>";
+
+                if (snapshot.empty) {
+                    displayArea.innerHTML += "<p>No questions stored yet.</p>";
+                    return;
+                }
+
+                snapshot.forEach(doc => {
+                    let q = doc.data();
+                    displayArea.innerHTML += `<p><strong><font color=red>${doc.id}</font>. ${q.questiontext}</strong><br>
+                        1. ${q.option1} <br>
+                        2. ${q.option2} <br>
+                        3. ${q.option3} <br>
+                        4. ${q.option4} <br>
+                        <b>✅ Correct Answer:</b> ${q.correctanswer}<br>
+                        <b>📖 Explanation:</b> ${q.explanation}<br>
+                        <b>📌 Category:</b> ${q.category} | <b>🎯 Difficulty:</b> ${q.difficulty} | <b>⭐ Marks:</b> ${q.marks}<br>
+                        <b>🖼️ Image:</b> <a href="${q.imageurl}" target="_blank">${q.imageurl}</a><br>
+                        <b>📂 Type:</b> ${q.type} | <b>🏷️ Tags:</b> ${q.tags}
+                        </p><hr>`;
+                });
+            } catch (error) {
+                console.error("❌ Error fetching questions:", error);
+                alert("❌ Failed to fetch questions. Check console for details.");
+            }
+        };
+    </script>
+</head>
+<body>
+    <h2>📥 Bulk Question Upload - Firestore</h2>
+    <textarea id="questionInput" rows="10" cols="80" placeholder="Enter questions in {questiontext, 1.option1, 2.option2, 3.option3, 4.option4, correctanswer, explanation, category, difficulty, marks, imageurl, type, tags} format"></textarea>
+    <br><br>
+    <button onclick="validateAndStore()">📤 Upload Questions</button>
+    <button onclick="displayStoredQuestions()">📚 Show Stored Questions</button>
+
+    <div id="storedQuestions"></div>
+</body>
+</html>
