@@ -139,39 +139,7 @@ function ex2()
 
 
 
-function checkAdminAccess() {
-    var dbRequest = indexedDB.open("SunilDatabase");
 
-    dbRequest.onsuccess = function(event) {
-        var db = event.target.result;
-        var transaction = db.transaction("users", "readonly");
-        var store = transaction.objectStore("users");
-
-        // Get the logged-in user's ID from sessionStorage
-        var userId = sessionStorage.getItem("userPrimaryKey");
-
-        if (!userId) {
-            alert("Access Denied! Please login.");
-            window.location.href = "index.html";
-            return;
-        }
-
-        var request = store.get(Number(userId));
-
-        request.onsuccess = function(event) {
-            var user = event.target.result;
-            if (!user || user.role !== "Admin") {
-                alert("Access Denied! Admins Only.");
-                window.location.href = "index.html";
-            }
-        };
-
-        request.onerror = function() {
-            alert("Error fetching user data!");
-            window.location.href = "index.html";
-        };
-    };
-}
 
 
 
@@ -179,35 +147,7 @@ function checkAdminAccess() {
 </head>
 
 <body bgcolor="#87a541" onload="checkAdminAccess()"> 
-<script>
-function showTime() {
-    var now = new Date();
 
-    // Extract date components
-    var day = String(now.getDate()).padStart(2, '0');
-    var month = String(now.getMonth() + 1).padStart(2, '0'); // Months are 0-based
-    var year = now.getFullYear();
-
-    // Extract time components
-    var hours = now.getHours();
-    var minutes = String(now.getMinutes()).padStart(2, '0');
-    var seconds = String(now.getSeconds()).padStart(2, '0');
-
-    // Convert to 12-hour format
-    var ampm = hours >= 12 ? 'PM' : 'AM';
-    hours = hours % 12 || 12; // Convert 0 to 12
-
-    // Format the final string
-    var dateTimeString = `${day}-${month}-${year} : ${hours}:${minutes}:${seconds} ${ampm}`;
-
-    // Set the formatted string in the input field
-    document.getElementById("timeShow").value = dateTimeString;
-}
-setInterval(showTime, 1000);
-document.addEventListener('DOMContentLoaded', function() {
-	showTime(); // Initial call to set the time immediately
-});
-</script>
 
 <div id="mainPage">
 <form name=frm  >
@@ -215,23 +155,7 @@ document.addEventListener('DOMContentLoaded', function() {
 <p align="center"><b><font color="#323d18" size="6"><u>Management</u></font></b></p>
 <div align="center"> <font size="6">
   <table border="3" cellpadding="5" cellspacing="0" width="65%" height="354">
- <!--  <tr>    
-      <td width="150" align="center" height="31" bgcolor="#999966">
-      <img id="im1" src="utilities/images/smallsunil.jpg"></img> &nbsp;&nbsp;
-      <b><font color="#FF00FF">
-	<a href="lsgiprofile.jsp" title="My Favorite items......" style="font-family: Arial; color: #323d18; font-weight: bold">Favorites</a></font></b></td>
-
-      <td width="34%"align="center" height="31" bgcolor="#999966">
-      <img id="im1" src="utilities/images/img3.jpg"></img> &nbsp;&nbsp; 
-      <b><font color="#FF00FF">
-	<a href="changepassword.jsp" style="font-family: Arial; color: #323d18; font-weight: bold">Projects</a></font></b></td>
-
-      <td width="188" align="center" height="31" bgcolor="#999966">
-      <img id="im2" src="utilities/images/img2.jpg"></img>&nbsp;
-      <b><font color="#FF00FF">
-	<a href=logout.html style="font-family: Arial; color: #323d18; font-weight: bold">Exit</a></font></b></td>
-	</tr>
--->
+ 
     	<tr> 
       <td height="190" align="center" colspan="3" valign="top" style="margin: 40px" width="434" 
 	background="Images/nature.jpg"> 
@@ -261,7 +185,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	<li><a class="qmparent" href="javascript:void(0)" title="Question related activities...">Questions</a> 
       	<ul>
               	<li><span class="qmdivider qmdividerx" ></span></li>  
-              	<li><a href="addQuestions.html" title="Add New Questions to DB directly...">New Question</a></li>
+              	<li><a href="noapinsert.jsp" title="Add New Questions to DB directly...">New Question</a></li>
               	<li><a href="flightdetails.jsp">View Questions</a></li>
               	<li><a href="modifyQuestionsDirect.html">Edit Questions</a></li>
 		<li><a href="passport.html">Delete Questions</a></li>
@@ -348,7 +272,99 @@ style="background-color:abd3c9;color:green;font-size:16;font-weight:bold;"
 </form>
 </div>
 
+
+
+
+
+
+
+
+
+
+
+    <script type="module">
+        // Import Firebase
+        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyA161hm4VSUvhaE-TaTN__wWXQrGDgr7Gw",
+            authDomain: "quiz-c67e4.firebaseapp.com",
+            projectId: "quiz-c67e4",
+            storageBucket: "quiz-c67e4.appspot.com",
+            messagingSenderId: "384299123981",
+            appId: "1:384299123981:web:7ad3c53f12c6d7edb31c44",
+            measurementId: "G-MRBYFQJ7LT"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Check Admin Access
+        async function checkAdminAccess() {
+            try {
+                const userId = sessionStorage.getItem("userPrimaryKey");
+
+                if (!userId) {
+                    alert("Access Denied! Please login.");
+                    window.location.href = "index.html";
+                    return;
+                }
+
+                const userDocRef = doc(db, "users", userId);
+                const userDoc = await getDoc(userDocRef);
+
+                if (!userDoc.exists()) {
+                    alert("Access Denied! User not found.");
+                    window.location.href = "index.html";
+                    return;
+                }
+
+                const userData = userDoc.data();
+
+                if (userData.role !== "Admin") {
+                    alert("Access Denied! Admins Only.");
+                    window.location.href = "index.html";
+                    return;
+                }
+
+                // Show the page if the user is an admin
+                document.getElementById("mainPage").style.display = "block";
+            } catch (error) {
+                console.error("Error checking admin access:", error);
+                alert("Error fetching user data!");
+                window.location.href = "index.html";
+            }
+        }
+
+        // Display Time
+        function showTime() {
+            const now = new Date();
+            const day = String(now.getDate()).padStart(2, '0');
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const year = now.getFullYear();
+            const hours = now.getHours();
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            const hours12 = hours % 12 || 12;
+            const dateTimeString = `${day}-${month}-${year} : ${hours12}:${minutes}:${seconds} ${ampm}`;
+            document.getElementById("timeShow").value = dateTimeString;
+        }
+
+        // Exit Display Function
+        function exitDisplay() {
+            document.getElementById('mainPage').style.display = "none";
+        }
+
+        // Run on Page Load
+        window.onload = function() {
+            checkAdminAccess();
+            showTime();
+            setInterval(showTime, 1000);
+        };
+    </script>
 </body>
-
-
 </html>
