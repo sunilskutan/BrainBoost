@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Learn Computer</title>
+    <script type="module">
+        // Import Firebase
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+       
+// Firebase Configuration
+const firebaseConfig = {
+    apiKey: "AIzaSyA161hm4VSUvhaE-TaTN__wWXQrGDgr7Gw",
+    authDomain: "quiz-c67e4.firebaseapp.com",
+    projectId: "quiz-c67e4",
+    storageBucket: "quiz-c67e4.appspot.com",
+    messagingSenderId: "384299123981",
+    appId: "1:384299123981:web:7ad3c53f12c6d7edb31c44",
+    measurementId: "G-MRBYFQJ7LT"
+};
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        function checkLogined() {
+            var welcomePage = document.getElementById("welcomeContainer"); 
+            if (sessionStorage.getItem("isLogin") !== "true") {
+                welcomePage.style.display = "none";  
+                var messageContainer = document.createElement("div");
+                messageContainer.innerHTML = "Please Login Again <a href='index.html'>Home</a>";
+                messageContainer.style.textAlign = "center";
+                messageContainer.style.marginTop = "20px";
+                messageContainer.style.fontSize = "18px";
+                messageContainer.style.color = "red";
+                document.body.appendChild(messageContainer);
+            }   
+        }
+        checkLogined();
+
+        async function fetchUserDetails() {
+            let userId = sessionStorage.getItem("userPrimaryKey");
+            if (!userId) {
+                document.getElementById("userDisplay").innerText = "User not found";
+                return;
+            }
+
+            try {
+                const userRef = doc(db, "users", userId);
+                const userSnap = await getDoc(userRef);
+
+                if (userSnap.exists()) {
+                    let userData = userSnap.data();
+                    document.getElementById("userDisplay").innerText = ` ${userData.name || "Guest"}`;
+
+                    // Apply role-based theme
+                    applyRoleBasedTheme(userData.role);
+                } else {
+                    document.getElementById("userDisplay").innerText = "User not found";
+                }
+            } catch (error) {
+                console.error("Error fetching user details:", error);
+                document.getElementById("userDisplay").innerText = "Error loading user";
+            }
+        }
+
+        function applyRoleBasedTheme(role) {
+            let container = document.getElementById("welcomeContainer");
+	    var links = document.querySelectorAll('.links a'); 
+
+
+            if (role === "Admin") {
+		document.body.style.backgroundColor = "#e6e6ff";
+                container.style.backgroundColor = " #9999ff"; 
+		links.forEach(link => {
+    		link.style.backgroundColor = "#0000e6";
+  		}); 
+		links.forEach(link => {
+    		link.style.backgroundColor = "#0000e6";
+    		link.addEventListener("mouseenter", () => {
+        	link.style.backgroundColor = "#000080"; // Change color on hover
+    		});
+    		link.addEventListener("mouseleave", () => {
+        	link.style.backgroundColor = "#0000e6"; // Revert back on mouse leave
+    		});
+		});
+            } else if (role === "User") {
+		document.body.style.backgroundColor = "#e6ffe6";
+                container.style.backgroundColor = " #99ff99"; 
+		links.forEach(link => {
+    		link.style.backgroundColor = "#00b300";
+  		}); 
+		links.forEach(link => {
+    		link.style.backgroundColor = "#00b300";
+    		link.addEventListener("mouseenter", () => {
+        	link.style.backgroundColor = "#006600"; // Change color on hover
+    		});
+    		link.addEventListener("mouseleave", () => {
+        	link.style.backgroundColor = "#00b300"; // Revert back on mouse leave
+    		});
+		});
+            } else {
+		document.body.style.backgroundColor = "#ffe6f0";
+                container.style.backgroundColor = " #ffb3d1"; 
+		links.forEach(link => {
+    		link.style.backgroundColor = "#ff0066";
+  		}); 
+		links.forEach(link => {
+    		link.style.backgroundColor = "#ff0066";
+    		link.addEventListener("mouseenter", () => {
+        	link.style.backgroundColor = "#b30047"; // Change color on hover
+    		});
+    		link.addEventListener("mouseleave", () => {
+        	link.style.backgroundColor = "#ff0066"; // Revert back on mouse leave
+    		});
+		});
+            }
+        }
+
+        fetchUserDetails();
+    </script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+        .container {
+            width: 90%;
+            max-width: 400px;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            text-align: center;
+            position: relative;
+
+            transition: background-color 0.3s ease;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 16px;
+            color: #555;
+            margin-bottom: 20px;
+        }
+        .user-info {
+            font-size: 14px;
+            font-weight: bold;
+            color: #333;
+            position: absolute;
+            top: 10px;
+            right: 10px;
+        }
+        .links a {
+            display: block;
+            text-decoration: none;
+            color: white; 
+
+            padding: 10px;
+            margin: 15px 0;
+            border-radius: 5px;
+            font-size: 18px;
+        }
+        .links a:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container" id="welcomeContainer">
+        <div class="header">
+            <div>Welcome</div>
+        </div>
+        <div class="user-info" id="userDisplay">Loading...</div>
+        <div class="links" >
+            <a href="Learn.html" >Learn</a>
+            <a href="test.html">Test</a>
+            <a href="adminManagementPage.html" >Overview</a>
+            <a href="addQuestionsByUser.html" >Donate</a>
+            <a href="index.html" >Home</a>
+        </div>
+    </div>
+</body>
+</html>
