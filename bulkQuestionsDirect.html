@@ -70,7 +70,24 @@
             }
 
             await checkAndStoreUniqueQuestions(formattedQuestions);
+            // Automatically display questions after storing
+            await window.displayStoredQuestions();
         };
+
+        // ✅ Get the highest QID from existing questions
+        async function getHighestQid() {
+            const snapshot = await getDocs(collection(db, "questions"));
+            let maxQid = 0;
+            
+            snapshot.forEach(doc => {
+                const qid = doc.data().qid || 0;
+                if (qid > maxQid) {
+                    maxQid = qid;
+                }
+            });
+            
+            return maxQid;
+        }
 
         // ✅ Check if question exists before storing
         async function checkAndStoreUniqueQuestions(questions) {
@@ -87,15 +104,24 @@
             await addQuestionsToFirestore(newQuestions);
         }
 
-        // ✅ Store unique questions in Firestore
+        // ✅ Store unique questions in Firestore with QID
         async function addQuestionsToFirestore(questions) {
             try {
+                // Get the current highest QID
+                let currentQid = await getHighestQid();
+                
                 for (let question of questions) {
+                    currentQid++; // Increment QID for each new question
                     let docRef = doc(collection(db, "questions"));
-                    await setDoc(docRef, question);
+                    
+                    // Add QID to the question object
+                    await setDoc(docRef, {
+                        ...question,
+                        qid: currentQid
+                    });
                 }
 
-                alert(`✅ ${questions.length} new question(s) added successfully!`);
+                alert(`✅ ${questions.length} new question(s) added successfully with QIDs!`);
                 document.getElementById("questionInput").value = ""; // Clear input field
             } catch (error) {
                 console.error("❌ Error adding questions:", error);
@@ -103,7 +129,7 @@
             }
         }
 
-        // ✅ Display stored questions
+        // ✅ Display stored questions with QID
         window.displayStoredQuestions = async function() {
             try {
                 const snapshot = await getDocs(collection(db, "questions"));
@@ -115,9 +141,17 @@
                     return;
                 }
 
+                // Sort questions by qid
+                const questions = [];
                 snapshot.forEach(doc => {
-                    let q = doc.data();
-                    displayArea.innerHTML += `<p><strong><font color=red>${doc.id}</font>. ${q.questiontext}</strong><br>
+                    questions.push({ id: doc.id, data: doc.data() });
+                });
+                
+                // Sort by qid
+                questions.sort((a, b) => (a.data.qid || 0) - (b.data.qid || 0));
+
+                questions.forEach(({ id, data: q }) => {
+                    displayArea.innerHTML += `<p><strong><font color="red">QID: ${q.qid || 'N/A'}</font> | <font color="green">Doc ID: ${id}</font> | ${q.questiontext}</strong><br>
                         1. ${q.option1} <br>
                         2. ${q.option2} <br>
                         3. ${q.option3} <br>
