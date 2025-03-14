@@ -7,21 +7,36 @@
     <link rel="stylesheet" href="styles.css">
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, getDocs, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-       // Firebase Configuration
-const firebaseConfig = {
-    apiKey: "AIzaSyA161hm4VSUvhaE-TaTN__wWXQrGDgr7Gw",
-    authDomain: "quiz-c67e4.firebaseapp.com",
-    projectId: "quiz-c67e4",
-    storageBucket: "quiz-c67e4.appspot.com",
-    messagingSenderId: "384299123981",
-    appId: "1:384299123981:web:7ad3c53f12c6d7edb31c44",
-    measurementId: "G-MRBYFQJ7LT"
-};
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyA161hm4VSUvhaE-TaTN__wWXQrGDgr7Gw",
+            authDomain: "quiz-c67e4.firebaseapp.com",
+            projectId: "quiz-c67e4",
+            storageBucket: "quiz-c67e4.appspot.com",
+            messagingSenderId: "384299123981",
+            appId: "1:384299123981:web:7ad3c53f12c6d7edb31c44",
+            measurementId: "G-MRBYFQJ7LT"
+        };
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+
+        // Function to get the highest UID from existing users
+        async function getHighestUid() {
+            const snapshot = await getDocs(collection(db, "users"));
+            let maxUid = 0;
+            
+            snapshot.forEach(doc => {
+                const uid = doc.data().uid || 0;
+                if (uid > maxUid) {
+                    maxUid = uid;
+                }
+            });
+            
+            return maxUid;
+        }
 
         window.submitUser = async function(event) {
             event.preventDefault(); // Prevent default form submission
@@ -42,7 +57,13 @@ const firebaseConfig = {
             }
 
             try {
-                const docRef = await addDoc(collection(db, "users"), {
+                // Get the current highest UID and increment it
+                const newUid = (await getHighestUid()) + 1;
+                
+                // Use setDoc with a custom document ID instead of addDoc
+                const docRef = doc(collection(db, "users"));
+                await setDoc(docRef, {
+                    uid: newUid,
                     username: username, 
                     password: password,
                     phone: phone,
@@ -52,9 +73,10 @@ const firebaseConfig = {
                     dob: dob,
                     gender: gender,
                     imageurl: imageurl,
-		    role: "User"
+                    role: "User"
                 });
-                alert("New User added successfully! with ID: " + docRef.id);
+
+                alert(`New User added successfully! UID: ${newUid}, Doc ID: ${docRef.id}`);
                 document.getElementById('userForm').reset();
             } catch (error) {
                 console.error("Error adding document: ", error);
@@ -74,15 +96,14 @@ const firebaseConfig = {
             <input type="text" id="phone" placeholder="Enter Phone Number  *">
             <input type="email" id="email" placeholder="Enter email id  *">
             <input type="text" id="name" placeholder="Enter Name  *">
-<select id="gender">
-  <option value="" disabled selected>Select Gender *</option>
-  <option value="Male">Male</option>
-  <option value="Female">Female</option>
-  <option value="Transgender">Transgender</option>
-</select>
+            <select id="gender">
+                <option value="" disabled selected>Select Gender *</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Transgender">Transgender</option>
+            </select>
             <input type="text" id="address" placeholder="Enter Address in full (optional)">
             <input type="text" id="dob" value="Date of Birth (optional)" onfocus="this.type='date'; this.value='';">
-
             <input type="text" id="imageurl" title="Image link" placeholder="Image link(optional)">
         </div>
         <div class="registerContainer">
