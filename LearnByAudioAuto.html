@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Game - Firestore</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyA161hm4VSUvhaE-TaTN__wWXQrGDgr7Gw",
+            authDomain: "quiz-c67e4.firebaseapp.com",
+            projectId: "quiz-c67e4",
+            storageBucket: "quiz-c67e4.appspot.com",
+            messagingSenderId: "384299123981",
+            appId: "1:384299123981:web:7ad3c53f12c6d7edb31c44",
+            measurementId: "G-MRBYFQJ7LT"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        console.log("🔥 Firebase Connected");
+
+        let allQuestions = [];
+        let isPaused = false;
+        let isAudioOn = true;
+        let currentSpeech = null;
+
+        async function fetchQuestionsFromFirestore() {
+            try {
+                const querySnapshot = await getDocs(collection(db, "questions"));
+                allQuestions = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+                if (allQuestions.length === 0) {
+                    alert("⚠️ No questions found in Firestore!");
+                    return;
+                }
+
+                console.log(`📌 Loaded ${allQuestions.length} questions from Firestore.`);
+                fetchRandomQuestion();
+            } catch (error) {
+                console.error("❌ Error fetching questions:", error);
+                alert("❌ Failed to load questions. Check console.");
+            }
+        }
+
+        window.fetchRandomQuestion = function() {
+            if (isPaused) return;
+
+            if (allQuestions.length === 0) {
+                alert("⚠️ No questions available.");
+                return;
+            }
+
+            let question = allQuestions[Math.floor(Math.random() * allQuestions.length)];
+            document.getElementById("questionNumber").innerText = `Question No. ${question.qid}`;
+            document.getElementById("questionText").innerText = question.questiontext;
+            document.getElementById("answerText").innerText = `Answer: ${question[`option${question.correctanswer}`]}`;
+            document.getElementById("explanationText").innerText = question.explanation || "No explanation provided.";
+
+            if (isAudioOn) {
+                playAudio(`${question.questiontext} Answer: ${question[`option${question.correctanswer}`]}. Explanation: ${question.explanation || "No explanation provided."}`);
+            } else {
+                setTimeout(fetchRandomQuestion, 5000); // If audio is off, wait 5 seconds before next question
+            }
+        }
+
+        function playAudio(text) {
+            if (!isAudioOn) return;
+
+            // Cancel any ongoing speech
+            window.speechSynthesis.cancel();
+            
+            currentSpeech = new SpeechSynthesisUtterance(text);
+            currentSpeech.lang = 'en-US';
+            currentSpeech.volume = 1;
+            currentSpeech.rate = 1;
+            currentSpeech.pitch = 1;
+
+            currentSpeech.onend = function () {
+                if (!isPaused) {
+                    setTimeout(fetchRandomQuestion, 2000);
+                }
+            };
+            
+            currentSpeech.onerror = function(event) {
+                console.error("Speech synthesis error:", event);
+            };
+
+            window.speechSynthesis.speak(currentSpeech);
+        }
+
+        window.toggleAudio = function() {
+            isAudioOn = !isAudioOn;
+            const audioButton = document.getElementById("audioToggle");
+            audioButton.innerText = isAudioOn ? "Audio Off" : "Audio On";
+            audioButton.className = isAudioOn ? 
+                "bg-green-500 text-white py-2 px-6 rounded-lg mx-2 hover:bg-green-700" : 
+                "bg-gray-500 text-white py-2 px-6 rounded-lg mx-2 hover:bg-gray-700";
+            
+            if (!isAudioOn) {
+                window.speechSynthesis.cancel();
+            } else if (!isPaused) {
+                // Resume audio if unpaused
+                fetchRandomQuestion();
+            }
+        }
+
+        window.pauseQuiz = function() {
+            isPaused = true;
+            window.speechSynthesis.cancel();
+        }
+
+        window.quitQuiz = function() {
+            isPaused = true;
+            window.speechSynthesis.cancel();
+            window.location.href = 'welcomePage.html';
+        }
+
+        window.onload = fetchQuestionsFromFirestore;
+    </script>
+</head>
+<body class="bg-black flex items-center justify-center h-screen">
+    <div id="quizContainer" class="text-white p-8 w-full text-center">
+        <h2 id="questionNumber" class="text-2xl font-bold mb-4"></h2>
+        <p id="questionText" class="mb-4 text-xl font-semibold">Loading question...</p>
+        <p id="answerText" class="text-green-400 text-lg font-semibold"></p>
+        <p id="explanationText" class="text-gray-300 text-md mt-4"></p>
+        <div class="mt-6">
+            <button id="audioToggle" onclick="toggleAudio()" class="bg-green-500 text-white py-2 px-6 rounded-lg mx-2 hover:bg-green-700">Audio Off</button>
+            <button onclick="pauseQuiz()" class="bg-yellow-500 text-black py-2 px-6 rounded-lg mx-2 hover:bg-yellow-700">Pause</button>
+            <button onclick="quitQuiz()" class="bg-red-500 text-white py-2 px-6 rounded-lg mx-2 hover:bg-red-700">Quit</button>
+        </div>
+    </div>
+</body>
+</html>
