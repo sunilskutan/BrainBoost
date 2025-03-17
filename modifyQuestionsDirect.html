@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firestore Questions Manager</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-firestore-compat.js"></script>
+    <style>
+        :root {
+            --primary-color: #4361ee;
+            --secondary-color: #3f37c9;
+            --success-color: #4bb543;
+            --error-color: #ff3333;
+            --light-gray: #f5f7fa;
+            --dark-gray: #4a5568;
+            --white: #ffffff;
+            --border-radius: 8px;
+            --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: var(--light-gray);
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background-color: var(--white);
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            overflow: hidden;
+        }
+        
+        header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: var(--white);
+            padding: 2rem;
+            text-align: center;
+        }
+        
+        h1 {
+            margin: 0;
+            font-size: 2.2rem;
+            font-weight: 600;
+        }
+        
+        .subtitle {
+            opacity: 0.8;
+            margin-top: 0.5rem;
+            font-size: 1rem;
+        }
+        
+        .main-content {
+            padding: 2rem;
+        }
+        
+        .search-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 2rem;
+            align-items: center;
+        }
+        
+        input[type="number"] {
+            flex-grow: 1;
+            padding: 0.8rem 1rem;
+            border: 2px solid #e2e8f0;
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+        
+        input[type="number"]:focus {
+            border-color: var(--primary-color);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
+        }
+        
+        button {
+            background-color: var(--primary-color);
+            color: var(--white);
+            border: none;
+            border-radius: var(--border-radius);
+            padding: 0.8rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        
+        button:hover {
+            background-color: var(--secondary-color);
+            transform: translateY(-2px);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--dark-gray);
+        }
+        
+        input[type="text"], 
+        input[type="number"],
+        textarea, 
+        select {
+            width: 100%;
+            padding: 0.8rem 1rem;
+            border: 2px solid #e2e8f0;
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+        
+        input[type="text"]:focus, 
+        input[type="number"]:focus,
+        textarea:focus, 
+        select:focus {
+            border-color: var(--primary-color);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
+        }
+        
+        textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+        
+        .status-message {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            border-radius: var(--border-radius);
+            font-weight: 500;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .success {
+            background-color: rgba(75, 181, 67, 0.1);
+            color: var(--success-color);
+            border: 1px solid rgba(75, 181, 67, 0.3);
+        }
+        
+        .error {
+            background-color: rgba(255, 51, 51, 0.1);
+            color: var(--error-color);
+            border: 1px solid rgba(255, 51, 51, 0.3);
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .form-container {
+            background-color: #f8fafc;
+            border-radius: var(--border-radius);
+            padding: 2rem;
+            margin-top: 2rem;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .form-container h2 {
+            margin-bottom: 1.5rem;
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+        
+        .form-row {
+            display: flex;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-col {
+            flex: 1;
+        }
+        
+        .loader {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            margin-left: 10px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .update-button {
+            background-color: var(--success-color);
+            margin-top: 1rem;
+            padding: 1rem 2rem;
+        }
+        
+        .update-button:hover {
+            background-color: #3d9538;
+        }
+        
+        .search-button {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .search-button .loader {
+            display: none;
+        }
+        
+        .search-button.searching .loader {
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Firestore Questions Manager <a href="adminManagementPage.html">🏡</a></h1>
+            <p class="subtitle">Search and update questions in your database</p>
+        </header>
+        
+        <div class="main-content">
+            <div id="status-container">
+                <div id="configStatus" class="status-message"></div>
+            </div>
+            
+            <div id="mainContent">
+                <div class="search-container">
+                    <input type="number" id="qidSearch" placeholder="Enter QID to search for a question">
+                    <button id="searchButton" class="search-button">
+                        <span>Search</span>
+                        <span class="loader"></span>
+                    </button>
+                </div>
+                
+                <div id="searchStatus" class="status-message"></div>
+                
+                <div id="formContainer" class="form-container hidden">
+                    <h2>Update Question</h2>
+                    <form id="updateForm">
+                        <div class="form-group">
+                            <label for="category">Category:</label>
+                            <input type="text" id="category" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="questiontext">Question Text:</label>
+                            <textarea id="questiontext" required></textarea>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-col">
+                                <div class="form-group">
+                                    <label for="option1">Option 1:</label>
+                                    <input type="text" id="option1" required>
+                                </div>
+                            </div>
+                            <div class="form-col">
+                                <div class="form-group">
+                                    <label for="option2">Option 2:</label>
+                                    <input type="text" id="option2" required>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-col">
+                                <div class="form-group">
+                                    <label for="option3">Option 3:</label>
+                                    <input type="text" id="option3" required>
+                                </div>
+                            </div>
+                            <div class="form-col">
+                                <div class="form-group">
+                                    <label for="option4">Option 4:</label>
+                                    <input type="text" id="option4" required>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-col">
+                                <div class="form-group">
+                                    <label for="correctanswer">Correct Answer (1-4):</label>
+                                    <input type="number" id="correctanswer" min="1" max="4" required>
+                                </div>
+                            </div>
+                            <div class="form-col">
+                                <div class="form-group">
+                                    <label for="difficulty">Difficulty (1-10):</label>
+                                    <input type="number" id="difficulty" min="1" max="10" required>
+                                </div>
+                            </div>
+                            <div class="form-col">
+                                <div class="form-group">
+                                    <label for="marks">Marks:</label>
+                                    <input type="number" id="marks" min="1" required>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="explanation">Explanation:</label>
+                            <textarea id="explanation" required></textarea>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-col">
+                                <div class="form-group">
+                                    <label for="imageurl">Image URL:</label>
+                                    <input type="text" id="imageurl">
+                                </div>
+                            </div>
+                            <div class="form-col">
+                                <div class="form-group">
+                                    <label for="tags">Tags (comma-separated):</label>
+                                    <input type="text" id="tags">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="type">Type:</label>
+                            <select id="type" required>
+                                <option value="MCQ">MCQ</option>
+                                <option value="TrueFalse">True/False</option>
+                            </select>
+                        </div>
+                        
+                        <input type="hidden" id="docId">
+                        <button type="submit" class="update-button">Update Question</button>
+                    </form>
+                    
+                    <div id="updateStatus" class="status-message"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+// Variables to store Firebase and Firestore instances
+let db;
+let docId;
+
+// Auto-initialize Firebase when the page loads
+window.onload = function() {
+    try {
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyA161hm4VSUvhaE-TaTN__wWXQrGDgr7Gw",
+            authDomain: "quiz-c67e4.firebaseapp.com",
+            projectId: "quiz-c67e4",
+            storageBucket: "quiz-c67e4.appspot.com",
+            messagingSenderId: "384299123981",
+            appId: "1:384299123981:web:7ad3c53f12c6d7edb31c44",
+            measurementId: "G-MRBYFQJ7LT"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        
+        // Initialize Firestore
+        db = firebase.firestore();
+        
+        showStatus('configStatus', 'Connected to Firebase successfully!', 'success');
+        
+        // Set focus on the search input
+        document.getElementById('qidSearch').focus();
+        
+        // Clear the status message after 3 seconds
+        setTimeout(() => {
+            document.getElementById('configStatus').textContent = '';
+            document.getElementById('configStatus').className = 'status-message';
+        }, 3000);
+        
+    } catch (error) {
+        showStatus('configStatus', `Error connecting to Firebase: ${error.message}`, 'error');
+    }
+}
+
+// Search for a question by QID
+document.getElementById('searchButton').addEventListener('click', searchQuestion);
+
+// Also trigger search on Enter key in search input
+document.getElementById('qidSearch').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        searchQuestion();
+    }
+});
+
+// Handle form submission
+document.getElementById('updateForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    updateQuestion();
+});
+
+// Function to search for a question by QID
+function searchQuestion() {
+    const qid = parseInt(document.getElementById('qidSearch').value);
+    const searchButton = document.getElementById('searchButton');
+    
+    if (isNaN(qid)) {
+        showStatus('searchStatus', 'Please enter a valid QID', 'error');
+        return;
+    }
+    
+    document.getElementById('formContainer').classList.add('hidden');
+    showStatus('searchStatus', 'Searching...', '');
+    
+    // Add searching class to show the loader
+    searchButton.classList.add('searching');
+    
+    db.collection('questions').where('qid', '==', qid).get()
+        .then((querySnapshot) => {
+            // Remove searching class to hide the loader
+            searchButton.classList.remove('searching');
+            
+            if (querySnapshot.empty) {
+                showStatus('searchStatus', `No question found with QID: ${qid}`, 'error');
+                return;
+            }
+            
+            // Get the first document (should be only one)
+            const doc = querySnapshot.docs[0];
+            docId = doc.id;
+            const data = doc.data();
+            
+            // Fill the form with the document data
+            document.getElementById('category').value = data.category || '';
+            document.getElementById('questiontext').value = data.questiontext || '';
+            document.getElementById('option1').value = data.option1 || '';
+            document.getElementById('option2').value = data.option2 || '';
+            document.getElementById('option3').value = data.option3 || '';
+            document.getElementById('option4').value = data.option4 || '';
+            document.getElementById('correctanswer').value = data.correctanswer || '';
+            document.getElementById('difficulty').value = data.difficulty || '';
+            document.getElementById('marks').value = data.marks || '';
+            document.getElementById('explanation').value = data.explanation || '';
+            document.getElementById('imageurl').value = data.imageurl || '';
+            document.getElementById('tags').value = data.tags || '';
+            document.getElementById('type').value = data.type || 'MCQ';
+            document.getElementById('docId').value = docId;
+            
+            // Show the form
+            document.getElementById('formContainer').classList.remove('hidden');
+            showStatus('searchStatus', `Question with QID: ${qid} found!`, 'success');
+        })
+        .catch((error) => {
+            // Remove searching class to hide the loader
+            searchButton.classList.remove('searching');
+            showStatus('searchStatus', `Error searching for question: ${error.message}`, 'error');
+        });
+}
+
+// Function to update a question
+function updateQuestion() {
+    const docId = document.getElementById('docId').value;
+    
+    if (!docId) {
+        showStatus('updateStatus', 'No document ID found. Please search for a question first.', 'error');
+        return;
+    }
+    
+    // Get form values
+    const category = document.getElementById('category').value;
+    const questiontext = document.getElementById('questiontext').value;
+    const option1 = document.getElementById('option1').value;
+    const option2 = document.getElementById('option2').value;
+    const option3 = document.getElementById('option3').value;
+    const option4 = document.getElementById('option4').value;
+    const correctanswer = parseInt(document.getElementById('correctanswer').value);
+    const difficulty = parseInt(document.getElementById('difficulty').value);
+    const marks = parseInt(document.getElementById('marks').value);
+    const explanation = document.getElementById('explanation').value;
+    const imageurl = document.getElementById('imageurl').value;
+    const tags = document.getElementById('tags').value;
+    const type = document.getElementById('type').value;
+    
+    // Validate required fields
+    if (!category || !questiontext || !option1 || !option2 || !option3 || !option4 || 
+        isNaN(correctanswer) || isNaN(difficulty) || isNaN(marks) || !explanation || !type) {
+        showStatus('updateStatus', 'Please fill all required fields', 'error');
+        return;
+    }
+    
+    // Create update object
+    const updateData = {
+        category: category,
+        questiontext: questiontext,
+        option1: option1,
+        option2: option2,
+        option3: option3,
+        option4: option4,
+        correctanswer: correctanswer,
+        difficulty: difficulty,
+        marks: marks,
+        explanation: explanation,
+        imageurl: imageurl,
+        tags: tags,
+        type: type
+    };
+    
+    showStatus('updateStatus', 'Updating question...', '');
+    
+    // Update the document
+    db.collection('questions').doc(docId).update(updateData)
+        .then(() => {
+            showStatus('updateStatus', 'Question updated successfully!', 'success');
+        })
+        .catch((error) => {
+            showStatus('updateStatus', `Error updating question: ${error.message}`, 'error');
+        });
+}
+
+// Function to show status messages
+function showStatus(elementId, message, type) {
+    const statusElement = document.getElementById(elementId);
+    statusElement.textContent = message;
+    statusElement.className = 'status-message';
+    
+    if (type) {
+        statusElement.classList.add(type);
+    }
+}
+    </script>
+</body>
+</html>
