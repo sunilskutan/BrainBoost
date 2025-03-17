@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Online Test</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 0;
+        }
+        .quiz-container {
+            max-width: 100%;
+            margin: 10px;
+            padding: 15px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .timer {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            padding: 5px 10px;
+            background-color: #dc3545;
+            color: white;
+            border-radius: 5px;
+            font-weight: bold;
+            font-size: 14px;
+            z-index: 1000;
+        }
+        .question-nav-container {
+            position: fixed;
+            top: 50px;
+            right: 10px;
+            background-color: white;
+            padding: 10px;
+            border-radius: 10px;
+            box-shadow: 0 0 5px rgba(0,0,0,0.1);
+            max-width: 200px;
+            overflow-x: auto;
+        }
+        .question-nav {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            justify-content: center;
+        }
+        .nav-circle {
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 10px;
+            font-weight: bold;
+        }
+        .not-seen { background-color: #6c757d; color: white; }
+        .seen { background-color: #0dcaf0; color: white; }
+        .attempted { background-color: #198754; color: white; }
+        .question-card {
+            padding: 15px;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+        .option-container {
+            display: flex;
+            align-items: center;
+            margin: 8px 0;
+        }
+        .option-container input[type="checkbox"] {
+            margin-right: 8px;
+        }
+        .option-label {
+            margin: 0;
+            cursor: pointer;
+            flex: 1;
+            font-size: 14px;
+        }
+        .option-label:hover {
+            background-color: #f8f9fa;
+        }
+        #nextButton:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* Modal Styles */
+        .modal-content {
+            border-radius: 15px;
+            padding: 20px;
+        }
+        .modal-header {
+            border-bottom: none;
+        }
+        .modal-title {
+            color: #1a73e8;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .quiz-container {
+                margin: 5px;
+                padding: 10px;
+            }
+            .question-nav-container {
+                top: 40px;
+                right: 5px;
+                max-width: 150px;
+            }
+            .nav-circle {
+                width: 20px;
+                height: 20px;
+                font-size: 9px;
+            }
+            .question-card {
+                padding: 10px;
+            }
+            .timer {
+                font-size: 12px;
+                padding: 3px 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="timer" id="timer" style="display: none;">00:00</div>
+    <div class="question-nav-container" id="questionNavContainer" style="display: none;">
+        <div class="question-nav" id="questionNav"></div>
+    </div>
+    <div class="quiz-container" id="quizContainer" style="display: none;">
+        <h3 class="text-primary mb-4" align="center">Online Test</h3>
+        <div id="questionsContainer"></div>
+        <div class="d-flex justify-content-between mt-3">
+            <button class="btn btn-primary" id="nextButton" onclick="nextQuestion()">Next</button>
+            <button class="btn btn-success" id="submitButton" onclick="submitQuiz()">Submit Test</button>
+        </div>
+    </div>
+
+    <!-- Modal for Test Configuration -->
+    <div class="modal fade" id="testConfigModal" tabindex="-1" aria-labelledby="testConfigModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="testConfigModalLabel">Configure Your Test</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="testConfigForm">
+                        <div class="mb-3">
+                            <label for="numQuestions" class="form-label">Number of Questions</label>
+                            <input type="number" class="form-control" id="numQuestions" min="1" max="50" value="10" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="category" class="form-label">Category</label>
+                            <select class="form-select" id="category" required>
+                                <option value="General Knowledge">General Knowledge</option>
+                                <option value="Science">Science</option>
+                                <option value="Mathematics">Mathematics</option>
+                                <option value="Indian History">Indian History</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="duration" class="form-label">Duration (minutes)</label>
+                            <input type="number" class="form-control" id="duration" min="1" max="60" value="6" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="negativeMarking" class="form-label">Negative Marking</label>
+                            <select class="form-select" id="negativeMarking" required>
+                                <option value="0">No</option>
+                                <option value="0.25">0.25 marks</option>
+                                <option value="0.5">0.5 marks</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="difficulty" class="form-label">Difficulty Level</label>
+                            <input type="number" class="form-control" id="difficulty" min="1" max="10" value="4" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" onclick="startCustomTest()">Start Test</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+        import { getFirestore, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyA161hm4VSUvhaE-TaTN__wWXQrGDgr7Gw",
+            authDomain: "quiz-c67e4.firebaseapp.com",
+            projectId: "quiz-c67e4",
+            storageBucket: "quiz-c67e4.appspot.com",
+            messagingSenderId: "384299123981",
+            appId: "1:384299123981:web:7ad3c53f12c6d7edb31c44",
+            measurementId: "G-MRBYFQJ7LT"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        let questions = [];
+        let currentQuestionIndex = 0;
+        let userAnswers = [];
+        let seenQuestions = [];
+        let timer;
+        let timeLeft;
+        let quizState = 'active';
+        let testConfig = {};
+
+        // Show the modal on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            const testConfigModal = new bootstrap.Modal(document.getElementById('testConfigModal'));
+            testConfigModal.show();
+        });
+
+        window.startCustomTest = async function() {
+            const numQuestions = parseInt(document.getElementById('numQuestions').value);
+            testConfig = {
+                numQuestions: numQuestions,
+                category: document.getElementById('category').value,
+                duration: parseInt(document.getElementById('duration').value),
+                negativeMarking: parseFloat(document.getElementById('negativeMarking').value),
+                difficulty: parseInt(document.getElementById('difficulty').value)
+            };
+
+            timeLeft = testConfig.duration * 60;
+            userAnswers = Array(testConfig.numQuestions).fill(null);
+            seenQuestions = Array(testConfig.numQuestions).fill(false);
+
+            await fetchQuestions();
+            document.getElementById('quizContainer').style.display = 'block';
+            document.getElementById('timer').style.display = 'block';
+            document.getElementById('questionNavContainer').style.display = 'block';
+            const modal = bootstrap.Modal.getInstance(document.getElementById('testConfigModal'));
+            modal.hide();
+        }
+
+        function startTimer() {
+            timer = setInterval(() => {
+                timeLeft--;
+                const minutes = Math.floor(timeLeft / 60);
+                const seconds = timeLeft % 60;
+                document.getElementById('timer').textContent = 
+                    `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    showResults();
+                }
+            }, 1000);
+        }
+
+        window.nextQuestion = function() {
+            if (currentQuestionIndex < questions.length - 1) {
+                displayQuestion(currentQuestionIndex + 1);
+                updateNextButtonState();
+            }
+        }
+
+        function updateNextButtonState() {
+            const nextButton = document.getElementById('nextButton');
+            if (currentQuestionIndex === questions.length - 1) {
+                nextButton.disabled = true;
+            } else {
+                nextButton.disabled = false;
+            }
+        }
+
+        async function fetchQuestions() {
+            try {
+                let q = query(collection(db, "questions"));
+                if (testConfig.category) {
+                    q = query(q, where("category", "==", testConfig.category));
+                }
+                if (testConfig.difficulty) {
+                    q = query(q, where("difficulty", "==", testConfig.difficulty));
+                }
+
+                const querySnapshot = await getDocs(q);
+                const allQuestions = [];
+                querySnapshot.forEach(doc => {
+                    allQuestions.push({ id: doc.id, ...doc.data() });
+                });
+
+                // Randomly select questions based on configured number
+                questions = [];
+                while (questions.length < testConfig.numQuestions && allQuestions.length > 0) {
+                    const randomIndex = Math.floor(Math.random() * allQuestions.length);
+                    questions.push(allQuestions.splice(randomIndex, 1)[0]);
+                }
+
+                if (questions.length === 0) {
+                    alert("No questions available for the selected criteria!");
+                    return;
+                }
+
+                displayQuestion(0);
+                renderQuestionNav();
+                startTimer();
+                updateNextButtonState();
+            } catch (error) {
+                console.error("Error fetching questions:", error);
+                alert("Error loading questions: " + error.message);
+            }
+        }
+
+        function displayQuestion(index) {
+            currentQuestionIndex = index;
+            seenQuestions[index] = true;
+            const question = questions[index];
+            const container = document.getElementById('questionsContainer');
+            
+            container.innerHTML = `
+                <div class="question-card">
+                    <h5>Question ${index + 1}:(${question.qid})  ${question.questiontext}</h5>
+                    <div class="options">
+                        <div class="option-container">
+                            <input type="checkbox" id="opt1" name="option" value="1" 
+                                ${userAnswers[index] === 1 ? 'checked' : ''}>
+                            <label for="opt1" class="option-label">${question.option1}</label>
+                        </div>
+                        <div class="option-container">
+                            <input type="checkbox" id="opt2" name="option" value="2"
+                                ${userAnswers[index] === 2 ? 'checked' : ''}>
+                            <label for="opt2" class="option-label">${question.option2}</label>
+                        </div>
+                        <div class="option-container">
+                            <input type="checkbox" id="opt3" name="option" value="3"
+                                ${userAnswers[index] === 3 ? 'checked' : ''}>
+                            <label for="opt3" class="option-label">${question.option3}</label>
+                        </div>
+                        <div class="option-container">
+                            <input type="checkbox" id="opt4" name="option" value="4"
+                                ${userAnswers[index] === 4 ? 'checked' : ''}>
+                            <label for="opt4" class="option-label">${question.option4}</label>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            const checkboxes = document.querySelectorAll('input[name="option"]');
+            checkboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', (e) => {
+                    if (e.target.checked) {
+                        checkboxes.forEach(cb => {
+                            if (cb !== e.target) cb.checked = false;
+                        });
+                        userAnswers[index] = parseInt(e.target.value);
+                    } else {
+                        userAnswers[index] = null;
+                    }
+                    updateNavCircles();
+                });
+            });
+
+            updateNavCircles();
+            updateNextButtonState();
+        }
+
+        function renderQuestionNav() {
+            const navContainer = document.getElementById('questionNav');
+            navContainer.innerHTML = '';
+            navContainer.style.display = 'grid';
+            navContainer.style.gridTemplateColumns = 'repeat(auto-fill, minmax(25px, 1fr))';
+            navContainer.style.gridGap = '5px';
+
+            for (let i = 0; i < testConfig.numQuestions; i++) {
+                const circle = document.createElement('div');
+                circle.className = 'nav-circle';
+                circle.textContent = i + 1;
+                circle.addEventListener('click', () => {
+                    if (quizState === 'active') displayQuestion(i);
+                });
+                navContainer.appendChild(circle);
+            }
+            updateNavCircles();
+        }
+
+        function updateNavCircles() {
+            const circles = document.querySelectorAll('.nav-circle');
+            circles.forEach((circle, index) => {
+                if (userAnswers[index] !== null) {
+                    circle.className = 'nav-circle attempted';
+                } else if (seenQuestions[index]) {
+                    circle.className = 'nav-circle seen';
+                } else {
+                    circle.className = 'nav-circle not-seen';
+                }
+            });
+        }
+
+        window.submitQuiz = function() { 
+            var submitConfirm = confirm("Are you sure want to submit");
+            if(!submitConfirm){ return; }
+            clearInterval(timer);
+            showResults();
+        }
+
+        function showResults() {
+            quizState = 'results';
+            let score = 0;
+            let negativeScore = 0;
+            let summary = '';
+            
+            questions.forEach((question, index) => {
+                const userAnswer = userAnswers[index];
+                const isCorrect = userAnswer === question.correctanswer;
+                if (isCorrect) {
+                    score += question.marks;
+                } else if (userAnswer !== null && testConfig.negativeMarking > 0) {
+                    negativeScore += testConfig.negativeMarking;
+                }
+                
+                summary += `
+                    <div class="question-card mb-3">
+                        <h5>Question ${index + 1}: ${question.questiontext}</h5>
+                        <p>Your Answer: ${userAnswer ? question['option' + userAnswer] : 'Not attempted'}</p>
+                        <p>Correct Answer: ${question['option' + question.correctanswer]}</p>
+                        <p>Explanation: ${question.explanation}</p>
+                        <p class="${isCorrect ? 'text-success' : 'text-danger'}">
+                            ${isCorrect ? 'Correct (+' + question.marks + ' marks)' : (userAnswer !== null ? 'Incorrect (-' + testConfig.negativeMarking + ' marks)' : 'Not attempted')}
+                        </p>
+                    </div>
+                `;
+            });
+
+            const totalScore = Math.max(0, score - negativeScore);
+            const container = document.getElementById('questionsContainer');
+            container.innerHTML = `
+                <h3 class="mb-4">Test Results</h3>
+                <div class="alert alert-info">
+                    Your Score: ${totalScore} out of ${questions.reduce((sum, q) => sum + q.marks, 0)}<br>
+                    Positive Marks: ${score}<br>
+                    Negative Marks: ${negativeScore}
+                </div>
+                ${summary}
+                <button class="btn btn-primary mt-3" onclick="goBack()">Go Back</button>
+            `;
+            
+            document.getElementById('questionNavContainer').style.display = 'none';
+            document.getElementById('timer').style.display = 'none';
+            document.getElementById('submitButton').style.display = 'none';
+            document.getElementById('nextButton').style.display = 'none';
+        }
+
+        window.goBack = function() {
+            quizState = 'active';
+            document.getElementById('quizContainer').style.display = 'none';
+            const testConfigModal = new bootstrap.Modal(document.getElementById('testConfigModal'));
+            testConfigModal.show();
+        }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
