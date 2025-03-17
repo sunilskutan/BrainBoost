@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Online Test</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f0f2f5;
+        }
+        .quiz-container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .timer {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            background-color: #dc3545;
+            color: white;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .question-nav-container {
+            position: fixed;
+            top: 70px;
+            right: 20px;
+            background-color: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 0 5px rgba(0,0,0,0.1);
+        }
+        .question-nav {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+        .nav-circle {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .not-seen { background-color: #6c757d; color: white; }
+        .seen { background-color: #0dcaf0; color: white; }
+        .attempted { background-color: #198754; color: white; }
+        .question-card {
+            padding: 20px;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .option-container {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+        }
+        .option-container input[type="checkbox"] {
+            margin-right: 10px;
+        }
+        .option-label {
+            margin: 0;
+            cursor: pointer;
+            flex: 1;
+        }
+        .option-label:hover {
+            background-color: #f8f9fa;
+        }
+	#nextButton:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+    </style>
+</head>
+<body>
+    <div class="timer" id="timer">06:00</div>
+    <div class="question-nav-container" id="questionNavContainer">
+        <div class="question-nav" id="questionNav"></div>
+    </div>
+   <div class="quiz-container">
+    <h3 class="text-primary mb-4" align="center">Online Test</h3>
+    <div id="questionsContainer"></div>
+    <div class="d-flex justify-content-between mt-3">
+        <button class="btn btn-primary" id="nextButton" onclick="nextQuestion()">Next</button>
+        <button class="btn btn-success" id="submitButton" onclick="submitQuiz()">Submit Test</button>
+    </div>
+</div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+        import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyA161hm4VSUvhaE-TaTN__wWXQrGDgr7Gw",
+            authDomain: "quiz-c67e4.firebaseapp.com",
+            projectId: "quiz-c67e4",
+            storageBucket: "quiz-c67e4.appspot.com",
+            messagingSenderId: "384299123981",
+            appId: "1:384299123981:web:7ad3c53f12c6d7edb31c44",
+            measurementId: "G-MRBYFQJ7LT"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        let questions = [];
+        let currentQuestionIndex = 0;
+        let userAnswers = Array(10).fill(null);
+        let seenQuestions = Array(10).fill(false);
+        let timer;
+        let timeLeft = 60; // 6 minutes in seconds
+        let quizState = 'active'; // 'active', 'results'
+
+        // Start the timer
+        function startTimer() {
+            timer = setInterval(() => {
+                timeLeft--;
+                const minutes = Math.floor(timeLeft / 60);
+                const seconds = timeLeft % 60;
+                document.getElementById('timer').textContent = 
+                    `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    showResults();
+                }
+            }, 1000);
+        }
+
+// Add this new function
+window.nextQuestion = function() {
+    if (currentQuestionIndex < questions.length - 1) {
+        displayQuestion(currentQuestionIndex + 1);
+        updateNextButtonState();
+    }
+}
+
+// Add this new function to manage the Next button state
+function updateNextButtonState() {
+    const nextButton = document.getElementById('nextButton');
+    if (currentQuestionIndex === questions.length - 1) {
+        nextButton.disabled = true;
+    } else {
+        nextButton.disabled = false;
+    }
+}
+        // Fetch 10 random questions
+       // Modify the fetchQuestions function to update the Next button state after loading
+async function fetchQuestions() {
+    try {
+        const querySnapshot = await getDocs(collection(db, "questions"));
+        const allQuestions = [];
+        querySnapshot.forEach(doc => {
+            allQuestions.push({ id: doc.id, ...doc.data() });
+        });
+
+        // Randomly select 10 questions
+        while (questions.length < 10 && allQuestions.length > 0) {
+            const randomIndex = Math.floor(Math.random() * allQuestions.length);
+            questions.push(allQuestions.splice(randomIndex, 1)[0]);
+        }
+
+        displayQuestion(0);
+        renderQuestionNav();
+        startTimer();
+        updateNextButtonState(); // Add this line
+    } catch (error) {
+        console.error("Error fetching questions:", error);
+        alert("Error loading questions: " + error.message);
+    }
+}
+
+
+
+        // Modify the displayQuestion function to include updating the Next button state
+function displayQuestion(index) {
+    currentQuestionIndex = index;
+    seenQuestions[index] = true;
+    const question = questions[index];
+    const container = document.getElementById('questionsContainer');
+    
+    container.innerHTML = `
+        <div class="question-card">
+            <h5>Question ${index + 1}: ${question.questiontext}</h5>
+            <div class="options">
+                <div class="option-container">
+                    <input type="checkbox" id="opt1" name="option" value="1" 
+                        ${userAnswers[index] === 1 ? 'checked' : ''}>
+                    <label for="opt1" class="option-label">${question.option1}</label>
+                </div>
+                <div class="option-container">
+                    <input type="checkbox" id="opt2" name="option" value="2"
+                        ${userAnswers[index] === 2 ? 'checked' : ''}>
+                    <label for="opt2" class="option-label">${question.option2}</label>
+                </div>
+                <div class="option-container">
+                    <input type="checkbox" id="opt3" name="option" value="3"
+                        ${userAnswers[index] === 3 ? 'checked' : ''}>
+                    <label for="opt3" class="option-label">${question.option3}</label>
+                </div>
+                <div class="option-container">
+                    <input type="checkbox" id="opt4" name="option" value="4"
+                        ${userAnswers[index] === 4 ? 'checked' : ''}>
+                    <label for="opt4" class="option-label">${question.option4}</label>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Add event listeners to checkboxes
+    const checkboxes = document.querySelectorAll('input[name="option"]');
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', (e) => {
+            if (e.target.checked) {
+                // Uncheck other checkboxes
+                checkboxes.forEach(cb => {
+                    if (cb !== e.target) cb.checked = false;
+                });
+                userAnswers[index] = parseInt(e.target.value);
+            } else {
+                userAnswers[index] = null;
+            }
+            updateNavCircles();
+        });
+    });
+
+    updateNavCircles();
+    updateNextButtonState(); // Add this line
+}
+
+// Render question navigation circles in a 2x5 format
+function renderQuestionNav() {
+    const navContainer = document.getElementById('questionNav');
+    navContainer.innerHTML = '';
+    navContainer.style.display = 'grid';
+    navContainer.style.gridTemplateColumns = 'repeat(5, auto)';
+    navContainer.style.gridGap = '10px';
+    navContainer.style.justifyContent = 'center';
+
+    for (let i = 0; i < 10; i++) {
+        const circle = document.createElement('div');
+        circle.className = 'nav-circle';
+        circle.textContent = i + 1;
+        circle.addEventListener('click', () => {
+            if (quizState === 'active') displayQuestion(i);
+        });
+        navContainer.appendChild(circle);
+    }
+    updateNavCircles();
+}
+
+
+
+        // Update navigation circles based on status
+        function updateNavCircles() {
+            const circles = document.querySelectorAll('.nav-circle');
+            circles.forEach((circle, index) => {
+                if (userAnswers[index] !== null) {
+                    circle.className = 'nav-circle attempted';
+                } else if (seenQuestions[index]) {
+                    circle.className = 'nav-circle seen';
+                } else {
+                    circle.className = 'nav-circle not-seen';
+                }
+            });
+        }
+
+        // Submit quiz and show results
+        window.submitQuiz = function() { 
+	var submitConfirm = confirm("Are you sure want to submit");
+	if(!submitConfirm){ return; }
+            clearInterval(timer);
+            showResults();
+        }
+
+        // Show results
+        function showResults() {
+            quizState = 'results';
+            let score = 0;
+            let summary = '';
+            
+            questions.forEach((question, index) => {
+                const userAnswer = userAnswers[index];
+                const isCorrect = userAnswer === question.correctanswer;
+                if (isCorrect) score += question.marks;
+                
+                summary += `
+                    <div class="question-card mb-3">
+                        <h5>Question ${index + 1}: ${question.questiontext}</h5>
+                        <p>Your Answer: ${userAnswer ? question['option' + userAnswer] : 'Not attempted'}</p>
+                        <p>Correct Answer: ${question['option' + question.correctanswer]}</p>
+                        <p>Explanation: ${question.explanation}</p>
+                        <p class="${isCorrect ? 'text-success' : 'text-danger'}">
+                            ${isCorrect ? 'Correct (+' + question.marks + ' marks)' : 'Incorrect'}
+                        </p>
+                    </div>
+                `;
+            });
+
+            const container = document.getElementById('questionsContainer');
+            container.innerHTML = `
+                <h3 class="mb-4">Test Results</h3>
+                <div class="alert alert-info">
+                    Your Score: ${score} out of ${questions.reduce((sum, q) => sum + q.marks, 0)}
+                </div>
+                ${summary}
+                <button class="btn btn-primary mt-3" onclick="goBack()">Go Back</button>
+            `;
+            
+            document.getElementById('questionNavContainer').style.display = 'none';
+            document.getElementById('timer').style.display = 'none';
+            document.getElementById('submitButton').style.display = 'none';
+            document.getElementById('nextButton').style.display = 'none';
+
+        }
+
+        // Go back to quiz
+        window.goBack = function() {
+            quizState = 'active';
+            timeLeft = 360; // Reset timer
+            userAnswers = Array(10).fill(null);
+            seenQuestions = Array(10).fill(false);
+            
+            document.getElementById('questionNavContainer').style.display = 'block';
+            document.getElementById('timer').style.display = 'block';
+            document.getElementById('submitButton').style.display = 'block';
+            
+            fetchQuestions();
+        }
+
+        // Start the quiz
+        fetchQuestions();
+    </script>
+</body>
+</html>
