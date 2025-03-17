@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professional Learning Platform</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 1.5rem 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .container {
+            width: 90%;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+        
+        main {
+            padding: 3rem 0;
+        }
+        
+        .welcome-section {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            color: #2c3e50;
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            color: #7f8c8d;
+            margin-bottom: 2rem;
+        }
+        
+        .cards-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 2rem;
+        }
+        
+        .card {
+            background-color: white;
+            border-radius: 8px;
+            overflow: hidden;
+            width: 280px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        }
+        
+        .card-img {
+            height: 160px;
+            background-color: #3498db;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 3rem;
+        }
+        
+        .card:nth-child(2) .card-img {
+            background-color: #2ecc71;
+        }
+        
+        .card:nth-child(3) .card-img {
+            background-color: #e74c3c;
+        }
+        
+        .card:nth-child(4) .card-img {
+            background-color: #f39c12;
+        }
+        
+        .card-content {
+            padding: 1.5rem;
+        }
+        
+        .card-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 0.8rem;
+            color: #2c3e50;
+        }
+        
+        .card-text {
+            color: #7f8c8d;
+            margin-bottom: 1.5rem;
+            font-size: 0.95rem;
+        }
+        
+        .card-link {
+            display: inline-block;
+            background-color: #3498db;
+            color: white;
+            padding: 0.6rem 1.2rem;
+            border-radius: 4px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: background-color 0.3s ease;
+        }
+        
+        .card:nth-child(2) .card-link {
+            background-color: #2ecc71;
+        }
+        
+        .card:nth-child(3) .card-link {
+            background-color: #e74c3c;
+        }
+        
+        .card:nth-child(4) .card-link {
+            background-color: #f39c12;
+        }
+        
+        .card-link:hover {
+            opacity: 0.9;
+        }
+        
+        footer {
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            padding: 2rem 0;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+        
+        @media (max-width: 768px) {
+            .cards-container {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .card {
+                width: 100%;
+                max-width: 350px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="logo">Brain Boost</div>
+            <nav>
+                <!-- Navigation could be expanded here in the future -->
+            </nav>
+        </div>
+    </header>
+    
+    <main>
+        <div class="container">
+            <div class="welcome-section">
+                <h1>Welcome to Your Learning Journey</h1>
+                <p class="subtitle">Choose your preferred learning path from the options below</p>
+            </div>
+            
+            <div class="cards-container">
+                <div class="card">
+                    <div class="card-img">
+                        <i>📚</i>
+                    </div>
+                    <div class="card-content">
+                        <h2 class="card-title">Learning Path</h2>
+                        <p class="card-text">Start your structured learning journey with our comprehensive curriculum.</p>
+                        <a href="lightLearn.html" class="card-link">Get Started</a>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-img">
+                        <i>✏️</i>
+                    </div>
+                    <div class="card-content">
+                        <h2 class="card-title">Sample Test</h2>
+                        <p class="card-text">Evaluate your knowledge with our practice assessments and sample tests.</p>
+                        <a href="sampleTest.html" class="card-link">Take Test</a>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-img">
+                        <i>🎧</i>
+                    </div>
+                    <div class="card-content">
+                        <h2 class="card-title">Audio Learning</h2>
+                        <p class="card-text">Learn on the go with our audio lessons and educational content.</p>
+                        <a href="LearnByAudio.html" class="card-link">Listen Now</a>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-img">
+                        <i>🔄</i>
+                    </div>
+                    <div class="card-content">
+                        <h2 class="card-title">Auto Audio</h2>
+                        <p class="card-text">Experience our automated audio learning system with personalized content.</p>
+                        <a href="LearnByAudioAuto.html" class="card-link">Auto Play</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <footer>
+        <div class="container">
+            <p>© 2025 Brain Boost Learning Platform. All rights reserved.</p>
+        </div>
+    </footer>
+</body>
+</html>
