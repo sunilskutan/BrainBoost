@@ -533,6 +533,11 @@ function updateQuestion() {
     db.collection('questions').doc(docId).update(updateData)
         .then(() => {
             showStatus('updateStatus', 'Question updated successfully!', 'success');
+            
+setTimeout(() => {
+    window.location.reload();
+}, 1000);
+
         })
         .catch((error) => {
             showStatus('updateStatus', `Error updating question: ${error.message}`, 'error');
