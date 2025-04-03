@@ -83,7 +83,7 @@
             let question = remainingQuestions[Math.floor(Math.random() * remainingQuestions.length)];
             displayedQuestions.add(question.id);
 
-            typeWriterEffect(document.getElementById("questionText"), question.questiontext, 50, () => {
+            typeWriterEffect(document.getElementById("questionText"), question.qid+". "+question.questiontext, 50, () => {
                 typeWriterEffect(document.getElementById("option1Label"), question.option1);
                 typeWriterEffect(document.getElementById("option2Label"), question.option2);
                 typeWriterEffect(document.getElementById("option3Label"), question.option3);
