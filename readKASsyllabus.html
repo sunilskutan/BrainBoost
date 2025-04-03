@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Scrolling Display</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #ffccff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            overflow: hidden;
+        }
+
+        h1 {
+            font-size: 22px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #e6004c;
+            text-align: center;
+        }
+
+        .pdf-container {
+            width: 600px;
+            height: 400px;
+            overflow: auto; /* Allow scrolling */
+            position: relative;
+            border: 2px solid #333;
+            border-radius: 8px;
+            background-color: white;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        iframe {
+            width: 100%;
+            height: 5000px; /* Ensure height is large enough for scrolling */
+            border: none;
+        }
+
+        @media (max-width: 350px) {
+            .pdf-container {
+                width: 280px;
+                height: 280px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <h1><a href="userPage.html">🔙</a> KAS <span id="stg"></span> Syllabus</h1>
+    <div class="pdf-container" id="pdfContainer">
+        <iframe id="scrollFrame"></iframe>
+    </div>
+<br><br>
+Pause/Resume
+   <script>
+    let isScrolling = true;
+    const container = document.getElementById("pdfContainer");
+// Function to get URL parameters
+    function getQueryParam(param) {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get(param);
+    }
+let url = getQueryParam("url"); 
+let stage = getQueryParam("stage");
+document.getElementById("scrollFrame").src=url;
+document.getElementById("stg").innerHTML=stage;
+    function autoScroll() {
+        let scrollSpeed = 0.5; // Reduced speed to half
+        function scrollStep() {
+            if (isScrolling) {
+                container.scrollTop += scrollSpeed; // Slower scroll
+                if (container.scrollTop + container.clientHeight >= container.scrollHeight) {
+                    container.scrollTop = 0; // Reset scroll when reaching bottom
+                }
+            }
+            requestAnimationFrame(scrollStep);
+        }
+        scrollStep();
+    }
+
+    document.body.addEventListener("click", function () {
+        isScrolling = !isScrolling; // Toggle scrolling on click
+    });
+
+    window.onload = () => {
+        setTimeout(autoScroll, 2000); // Start scrolling after 2s
+    };
+</script>
+
+
+</body>
+</html>
