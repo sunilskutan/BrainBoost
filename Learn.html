@@ -62,7 +62,7 @@
             let question = remainingQuestions[Math.floor(Math.random() * remainingQuestions.length)];
             displayedQuestions.add(question.id);
 
-            document.getElementById("questionText").innerText = question.questiontext;
+            document.getElementById("questionText").innerText = question.qid+". "+question.questiontext;
             document.getElementById("option1Label").innerText = question.option1;
             document.getElementById("option2Label").innerText = question.option2;
             document.getElementById("option3Label").innerText = question.option3;
