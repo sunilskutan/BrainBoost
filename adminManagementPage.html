@@ -326,11 +326,7 @@ style="background-color:abd3c9;color:green;font-size:16;font-weight:bold;"
 
                 const userData = userDoc.data();
 
-		if (userData.role.toLowerCase() === "user") {
-    			window.location.href = "usersAdmin.html";
-		}
-
-                if (userData.role !== "Admin") {
+		if (userData.role !== "Admin") {
                     alert("Access Denied! Admins Only.");
                     window.location.href = "index.html";
                     return;
