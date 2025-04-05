@@ -244,12 +244,12 @@ function displayQuestion(index) {
     updateNextButtonState(); // Add this line
 }
 
-// Render question navigation circles in a 2x5 format
+// Render question navigation circles in a 1x10 format
 function renderQuestionNav() {
     const navContainer = document.getElementById('questionNav');
     navContainer.innerHTML = '';
     navContainer.style.display = 'grid';
-    navContainer.style.gridTemplateColumns = 'repeat(5, auto)';
+    navContainer.style.gridTemplateColumns = 'repeat(1, auto)';
     navContainer.style.gridGap = '10px';
     navContainer.style.justifyContent = 'center';
 
